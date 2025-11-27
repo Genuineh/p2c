@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 
 // Plugin to inline UI script into HTML
 function inlineUiHtml() {
@@ -11,14 +11,20 @@ function inlineUiHtml() {
       const uiJsPath = resolve(__dirname, 'dist/ui.js');
       const outputPath = resolve(__dirname, 'dist/ui.html');
 
+      // Check if required files exist
+      if (!existsSync(uiHtmlPath)) {
+        throw new Error(`UI HTML file not found: ${uiHtmlPath}`);
+      }
+      if (!existsSync(uiJsPath)) {
+        throw new Error(`UI JS file not found: ${uiJsPath}`);
+      }
+
       const html = readFileSync(uiHtmlPath, 'utf-8');
       const js = readFileSync(uiJsPath, 'utf-8');
 
-      // Replace <script src="ui.js"></script> with inline script
-      const inlinedHtml = html.replace(
-        '<script src="ui.js"></script>',
-        `<script>${js}</script>`
-      );
+      // Replace <script src="ui.js"></script> with inline script (flexible matching)
+      const scriptPattern = /<script\s+src=["']ui\.js["']\s*><\/script>/;
+      const inlinedHtml = html.replace(scriptPattern, `<script>${js}</script>`);
 
       writeFileSync(outputPath, inlinedHtml);
     },

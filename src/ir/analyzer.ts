@@ -162,6 +162,7 @@ export class NodeAnalyzer {
       const frame = node as FrameNode;
 
       // 布局属性
+      // Note: Pixso API only supports 'HORIZONTAL' and 'VERTICAL' layout modes (no 'GRID')
       if (frame.layoutMode && frame.layoutMode !== 'NONE') {
         container.layoutDirection = this.convertLayoutDirection(frame.layoutMode);
         container.mainAxisAlignment = this.convertMainAxisAlignment(frame.primaryAxisAlignItems);
