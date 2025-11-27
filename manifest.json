@@ -1,10 +1,6 @@
 {
-  "name": "Pixso CodeForge",
   "id": "pixso-codeforge",
-  "main": "dist/main.js",
+  "name": "Pixso CodeForge",
   "ui": "dist/ui.html",
-  "editorType": ["pixso"],
-  "menu": [
-    { "name": "启动插件", "command": "main" }
-  ]
+  "main": "dist/main.js"
 }
