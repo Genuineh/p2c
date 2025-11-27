@@ -10,7 +10,7 @@
 
 | 阶段 | 周数 | 状态 | 核心目标 | 版本 |
 |------|-----|------|---------|------|
-| Phase 0 | Week 1 | 🚧 进行中 | 环境搭建与 IR 设计 | v1.0 |
+| Phase 0 | Week 1 | ✅ 已完成 | 环境搭建与 IR 设计 | v1.0 |
 | Phase 1 | Week 2 | ⏳ 待开始 | Flutter MVP | v1.0 |
 | Phase 2 | Week 3 | ⏳ 待开始 | Flutter 完善与产品化 | v1.0 |
 | Phase 3 | Week 4+ | 📋 后续规划 | SwiftUI 支持 | v2.0 |
@@ -34,17 +34,17 @@
 - [x] 配置 Git Hooks (husky + lint-staged)
 - [x] 配置 Commitlint
 - [x] 创建项目文档 (README, TODO, CONTRIBUTING)
-- [ ] 定义 ForgeIR 完整类型 (`src/ir/types.ts`)
-- [ ] 实现插件入口 (`src/main.ts`)
-- [ ] 创建 UI 界面 (`src/ui.html`, `src/ui.ts`)
-- [ ] 实现节点分析器 (`src/ir/analyzer.ts`)
-- [ ] 实现 IR 优化器 (`src/ir/optimizer.ts`)
-- [ ] 创建工具函数 (`src/utils/`)
+- [x] 定义 ForgeIR 完整类型 (`src/ir/types.ts`)
+- [x] 实现插件入口 (`src/main.ts`)
+- [x] 创建 UI 界面 (`src/ui.html`, `src/ui.ts`)
+- [x] 实现节点分析器 (`src/ir/analyzer.ts`)
+- [x] 实现 IR 优化器 (`src/ir/optimizer.ts`)
+- [x] 创建工具函数 (`src/utils/`)
 
 ### 验收标准
 - [ ] Pixso 中能打开插件
 - [ ] 控制台能打印节点树
-- [ ] ForgeIR 类型定义完整且有注释
+- [x] ForgeIR 类型定义完整且有注释
 
 ---
 
