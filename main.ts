@@ -5,11 +5,11 @@
  * 主要负责与 Pixso API 交互，处理节点分析和代码生成。
  */
 
-import { NodeAnalyzer } from './ir/analyzer';
-import { IROptimizer } from './ir/optimizer';
-import { FlutterRenderer } from './codegen/flutter';
-import type { ForgeDocument, ForgeTargetPlatform, ForgeCodegenConfig } from './ir/types';
-import type { RenderResult } from './codegen/base';
+import { NodeAnalyzer } from './src/ir/analyzer';
+import { IROptimizer } from './src/ir/optimizer';
+import { FlutterRenderer } from './src/codegen/flutter';
+import type { ForgeDocument, ForgeTargetPlatform, ForgeCodegenConfig } from './src/ir/types';
+import type { RenderResult } from './src/codegen/base';
 
 // 显示插件 UI
 pixso.showUI(__html__, {

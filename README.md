@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.1+-646CFF.svg)](https://vitejs.dev/)
+[![Pixso Plugin CLI](https://img.shields.io/badge/Pixso_Plugin_CLI-1.0.8+-646CFF.svg)](https://www.npmjs.com/package/@pixso/plugin-cli)
 [![CI](https://github.com/Genuineh/p2c/actions/workflows/ci.yml/badge.svg)](https://github.com/Genuineh/p2c/actions/workflows/ci.yml)
 
 ## ✨ 特性
@@ -46,16 +46,21 @@ Codegen Engine（src/codegen/index.ts）
 
 ## 📁 项目结构
 
+> 项目使用 `@pixso/create-plugin` 创建，遵循 Pixso 插件标准项目结构
+
 ```
 pixso-codeforge/
 ├─ manifest.json              # Pixso 插件配置
+├─ main.ts                    # 插件主入口（沙箱环境）
+├─ host.ts                    # 宿主环境脚本
 ├─ tsconfig.json              # TypeScript 配置
-├─ vite.config.ts             # Vite 构建配置
 ├─ package.json               # 项目依赖
-├─ src/
-│  ├─ main.ts                 # 插件入口
-│  ├─ ui.html                 # 界面
-│  ├─ ui.ts                   # UI 逻辑
+├─ ui/                        # UI 组件（Preact）
+│  ├─ ui.html                 # UI 入口 HTML
+│  ├─ index.tsx               # UI 入口脚本
+│  ├─ App.tsx                 # 主应用组件
+│  └─ app.css                 # 样式文件
+├─ src/                       # 核心代码
 │  ├─ ir/
 │  │   ├─ types.ts            # ForgeIR 完整类型（核心！）
 │  │   ├─ analyzer.ts         # Pixso Node → ForgeIR
@@ -63,16 +68,11 @@ pixso-codeforge/
 │  ├─ codegen/
 │  │   ├─ base.ts             # 基础渲染器
 │  │   ├─ flutter.ts          # Flutter 代码生成
-│  │   ├─ swiftui.ts          # SwiftUI 代码生成
-│  │   ├─ compose.ts          # Jetpack Compose 代码生成
-│  │   ├─ react.ts            # React-TSX 代码生成
-│  │   ├─ vue.ts              # Vue 3 代码生成
-│  │   └─ weapp.ts            # 微信小程序代码生成
-│  ├─ utils/
-│  │   ├─ color.ts            # 颜色处理工具
-│  │   ├─ naming.ts           # 语义化命名生成
-│  │   └─ prettier.ts         # 代码格式化
-│  └─ assets/                 # 静态资源
+│  │   └─ index.ts            # 渲染器导出
+│  └─ utils/
+│      ├─ color.ts            # 颜色处理工具
+│      ├─ naming.ts           # 语义化命名生成
+│      └─ prettier.ts         # 代码格式化
 └─ dist/                      # 打包输出目录
 ```
 
