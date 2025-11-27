@@ -1,10 +1,9 @@
 /**
  * Pixso CodeForge - UI 组件
  *
- * 使用 Preact 实现的插件 UI
+ * 使用 React 实现的插件 UI
  */
-import { h } from 'preact';
-import { useState, useEffect, useCallback } from 'preact/hooks';
+import { useState, useEffect, useCallback } from 'react';
 import './app.css';
 
 /**
