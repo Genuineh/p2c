@@ -19,8 +19,9 @@
     "types": [
       "@pixso/plugin-typings"
     ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact"
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   },
   "include": ["main.ts", "host.ts", "src/**/*", "ui/**/*"],
   "exclude": ["node_modules", "dist"]

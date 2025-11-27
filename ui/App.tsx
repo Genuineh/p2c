@@ -3,6 +3,7 @@
  *
  * 使用 Preact 实现的插件 UI
  */
+import { h } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import './app.css';
 
