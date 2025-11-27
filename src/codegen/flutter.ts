@@ -1,5 +1,16 @@
 /**
  * Flutter 代码渲染器
+ *
+ * 支持功能：
+ * - Container / Box 渲染
+ * - Row / Column 布局
+ * - Text 样式
+ * - 圆角边框
+ * - 阴影效果
+ * - 渐变填充
+ * - 图片处理
+ * - Stack + Positioned 定位
+ * - 响应式布局（MediaQuery、FractionallySizedBox、Flexible、Expanded）
  */
 
 import type {
@@ -17,6 +28,7 @@ import type {
   ForgeCornerRadius,
   ForgePadding,
   ForgeCodegenConfig,
+  ForgeConstraints,
 } from '../ir/types';
 import { BaseRenderer, RenderResult } from './base';
 
@@ -46,7 +58,10 @@ export class FlutterRenderer extends BaseRenderer {
 
     // 生成主组件文件
     const componentName = this.toComponentName(document.name || 'GeneratedWidget');
-    const content = this.generateWidgetFile(componentName, document.root);
+    let content = this.generateWidgetFile(componentName, document.root);
+
+    // 应用 Dart 代码格式化
+    content = this.formatDartCode(content);
 
     results.push({
       filename: `${this.toSnakeCase(componentName)}.dart`,
@@ -112,17 +127,19 @@ export class FlutterRenderer extends BaseRenderer {
    * 渲染容器节点
    */
   private renderContainer(node: ForgeContainerNode): string {
-    const hasDecoration =
+    const hasDecoration = !!(
       (node.fills && node.fills.length > 0) ||
       (node.strokes && node.strokes.length > 0) ||
       (node.shadows && node.shadows.length > 0) ||
-      node.cornerRadius;
+      node.cornerRadius
+    );
 
-    const hasLayout = node.layoutDirection && node.layoutDirection !== 'none';
-    const hasPadding = node.padding && !this.isZeroPadding(node.padding);
+    const hasLayout = !!(node.layoutDirection && node.layoutDirection !== 'none');
+    const hasPadding = !!(node.padding && !this.isZeroPadding(node.padding));
+    const hasResponsiveConstraints = this.hasResponsiveConstraints(node.constraints);
 
     // 如果没有子节点且没有样式，返回 SizedBox
-    if (node.children.length === 0 && !hasDecoration) {
+    if (node.children.length === 0 && !hasDecoration && !hasResponsiveConstraints) {
       return this.line(
         `return SizedBox(width: ${this.formatNumber(node.width)}, height: ${this.formatNumber(node.height)});`
       );
@@ -130,17 +147,58 @@ export class FlutterRenderer extends BaseRenderer {
 
     let code = '';
 
+    // 响应式布局包装
+    if (hasResponsiveConstraints && this.config.useResponsive) {
+      code += this.renderResponsiveWrapper(node.constraints!, () => {
+        return this.renderContainerContent(
+          node,
+          hasDecoration,
+          hasLayout,
+          hasPadding,
+          hasResponsiveConstraints
+        );
+      });
+    } else {
+      code += this.renderContainerContent(
+        node,
+        hasDecoration,
+        hasLayout,
+        hasPadding,
+        hasResponsiveConstraints
+      );
+    }
+
+    return code;
+  }
+
+  /**
+   * 渲染容器内容
+   */
+  private renderContainerContent(
+    node: ForgeContainerNode,
+    hasDecoration: boolean,
+    hasLayout: boolean,
+    hasPadding: boolean,
+    hasResponsiveConstraints: boolean
+  ): string {
+    let code = '';
+
     // 开始 Container 或布局组件
     if (hasDecoration || hasPadding) {
       code += this.line('return Container(');
       this.pushIndent();
 
-      // 尺寸
-      if (node.width > 0) {
+      // 尺寸 - 如果使用响应式约束，可能不需要固定尺寸
+      if (node.width > 0 && !hasResponsiveConstraints) {
         code += this.line(`width: ${this.formatNumber(node.width)},`);
       }
-      if (node.height > 0) {
+      if (node.height > 0 && !hasResponsiveConstraints) {
         code += this.line(`height: ${this.formatNumber(node.height)},`);
+      }
+
+      // 约束
+      if (node.constraints && !this.config.useResponsive) {
+        code += this.renderConstraints(node.constraints);
       }
 
       // 内边距
@@ -186,7 +244,7 @@ export class FlutterRenderer extends BaseRenderer {
     if (node.children.length === 1) {
       // 递归渲染单个子元素
       const child = node.children[0];
-      return this.renderChildWidget(child);
+      return this.renderChildWidget(child, hasLayout);
     }
 
     let code = '';
@@ -219,7 +277,7 @@ export class FlutterRenderer extends BaseRenderer {
 
       for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i];
-        code += this.renderChildWidget(child);
+        code += this.renderChildWidget(child, hasLayout);
         code += ',\n';
 
         // 添加间距
@@ -268,50 +326,85 @@ export class FlutterRenderer extends BaseRenderer {
   /**
    * 渲染子 Widget
    */
-  private renderChildWidget(node: ForgeNode): string {
+  private renderChildWidget(node: ForgeNode, inFlexLayout: boolean = false): string {
+    // 检查是否需要 Flexible/Expanded 包装
+    const constraints =
+      'constraints' in node ? (node as ForgeContainerNode).constraints : undefined;
+    const needsFlexWrap =
+      inFlexLayout &&
+      this.config.useResponsive &&
+      constraints &&
+      (constraints.widthPercent || constraints.heightPercent);
+
+    let widgetCode = '';
+
     switch (node.type) {
       case 'frame':
       case 'group':
       case 'component':
       case 'instance':
-        return this.renderContainerAsChild(node as ForgeContainerNode);
+        widgetCode = this.renderContainerAsChild(node as ForgeContainerNode, inFlexLayout);
+        break;
       case 'rectangle':
-        return this.renderRectangleAsChild(node as ForgeRectangleNode);
+        widgetCode = this.renderRectangleAsChild(node as ForgeRectangleNode);
+        break;
       case 'ellipse':
-        return this.renderEllipseAsChild(node as ForgeEllipseNode);
+        widgetCode = this.renderEllipseAsChild(node as ForgeEllipseNode);
+        break;
       case 'text':
-        return this.renderTextAsChild(node as ForgeTextNode);
+        widgetCode = this.renderTextAsChild(node as ForgeTextNode);
+        break;
       case 'image':
-        return this.renderImageAsChild(node as ForgeImageNode);
+        widgetCode = this.renderImageAsChild(node as ForgeImageNode);
+        break;
       default:
-        return this.line(`// Unsupported: ${node.type}`);
+        widgetCode = this.line(`// Unsupported: ${node.type}`);
     }
+
+    // 如果需要 Flexible 包装
+    if (needsFlexWrap && constraints) {
+      return this.wrapWithFlexible(widgetCode, constraints);
+    }
+
+    return widgetCode;
   }
 
   /**
    * 渲染容器作为子元素
    */
-  private renderContainerAsChild(node: ForgeContainerNode): string {
-    const hasDecoration =
+  private renderContainerAsChild(node: ForgeContainerNode, inFlexLayout: boolean = false): string {
+    const hasDecoration = !!(
       (node.fills && node.fills.length > 0) ||
       (node.strokes && node.strokes.length > 0) ||
       (node.shadows && node.shadows.length > 0) ||
-      node.cornerRadius;
+      node.cornerRadius
+    );
 
-    const hasLayout = node.layoutDirection && node.layoutDirection !== 'none';
-    const hasPadding = node.padding && !this.isZeroPadding(node.padding);
+    const hasLayout = !!(node.layoutDirection && node.layoutDirection !== 'none');
+    const hasPadding = !!(node.padding && !this.isZeroPadding(node.padding));
+    const hasResponsiveConstraints = !!(
+      this.config.useResponsive && this.hasResponsiveConstraints(node.constraints)
+    );
 
     let code = '';
 
-    if (hasDecoration || hasPadding) {
+    // 如果使用百分比宽度/高度且不在flex布局中，使用 FractionallySizedBox
+    if (hasResponsiveConstraints && !inFlexLayout) {
+      code += this.renderFractionallySizedBox(node, hasDecoration, hasLayout, hasPadding);
+    } else if (hasDecoration || hasPadding) {
       code += this.line('Container(');
       this.pushIndent();
 
-      if (node.width > 0) {
+      if (node.width > 0 && !hasResponsiveConstraints) {
         code += this.line(`width: ${this.formatNumber(node.width)},`);
       }
-      if (node.height > 0) {
+      if (node.height > 0 && !hasResponsiveConstraints) {
         code += this.line(`height: ${this.formatNumber(node.height)},`);
+      }
+
+      // 添加约束
+      if (node.constraints && !this.config.useResponsive) {
+        code += this.renderConstraints(node.constraints);
       }
 
       if (hasPadding) {
@@ -879,5 +972,231 @@ export class FlutterRenderer extends BaseRenderer {
    */
   private isZeroPadding(padding: ForgePadding): boolean {
     return padding.top === 0 && padding.right === 0 && padding.bottom === 0 && padding.left === 0;
+  }
+
+  // ============================================================================
+  // 响应式布局支持
+  // ============================================================================
+
+  /**
+   * 检查是否有响应式约束
+   */
+  private hasResponsiveConstraints(constraints?: ForgeConstraints): boolean {
+    if (!constraints) return false;
+    return !!(
+      constraints.widthPercent ||
+      constraints.heightPercent ||
+      constraints.minWidth ||
+      constraints.maxWidth ||
+      constraints.minHeight ||
+      constraints.maxHeight
+    );
+  }
+
+  /**
+   * 渲染响应式包装器
+   */
+  private renderResponsiveWrapper(
+    _constraints: ForgeConstraints,
+    renderContent: () => string
+  ): string {
+    let code = '';
+
+    // 使用 LayoutBuilder 获取父容器约束
+    code += this.line('return LayoutBuilder(');
+    this.pushIndent();
+    code += this.line('builder: (context, constraints) {');
+    this.pushIndent();
+
+    // 渲染内容
+    const content = renderContent();
+    code += content;
+
+    this.popIndent();
+    code += this.line('},');
+    this.popIndent();
+    code += this.line(');');
+
+    return code;
+  }
+
+  /**
+   * 渲染 FractionallySizedBox
+   */
+  private renderFractionallySizedBox(
+    node: ForgeContainerNode,
+    hasDecoration: boolean,
+    hasLayout: boolean,
+    hasPadding: boolean
+  ): string {
+    let code = '';
+    const constraints = node.constraints;
+
+    code += this.line('FractionallySizedBox(');
+    this.pushIndent();
+
+    // 宽度百分比
+    if (constraints?.widthPercent) {
+      code += this.line(`widthFactor: ${this.formatNumber(constraints.widthPercent, 2)},`);
+    }
+
+    // 高度百分比
+    if (constraints?.heightPercent) {
+      code += this.line(`heightFactor: ${this.formatNumber(constraints.heightPercent, 2)},`);
+    }
+
+    // 对齐方式
+    code += this.line('alignment: Alignment.topLeft,');
+
+    // 子元素
+    if (hasDecoration || hasPadding || node.children.length > 0) {
+      code += this.line('child: Container(');
+      this.pushIndent();
+
+      if (hasPadding) {
+        code += this.renderPadding(node.padding!);
+      }
+
+      if (hasDecoration) {
+        code += this.renderBoxDecoration(node.fills, node.strokes, node.shadows, node.cornerRadius);
+      }
+
+      if (node.children.length > 0) {
+        code += this.line('child: ');
+        this.pushIndent();
+        code += this.renderChildren(node, !!hasLayout);
+        this.popIndent();
+        code += ',\n';
+      }
+
+      this.popIndent();
+      code += this.line('),');
+    }
+
+    this.popIndent();
+    code += this.indent() + ')';
+
+    return code;
+  }
+
+  /**
+   * 使用 Flexible 包装子元素
+   */
+  private wrapWithFlexible(widgetCode: string, constraints: ForgeConstraints): string {
+    let code = '';
+
+    // 如果是 100% 宽度/高度，使用 Expanded
+    const useExpanded = constraints.widthPercent === 1 || constraints.heightPercent === 1;
+
+    if (useExpanded) {
+      code += this.line('Expanded(');
+    } else {
+      code += this.line('Flexible(');
+      this.pushIndent();
+      // 计算 flex 值（基于百分比）
+      const flexValue = Math.round(
+        (constraints.widthPercent || constraints.heightPercent || 1) * 10
+      );
+      code += this.line(`flex: ${flexValue},`);
+      this.popIndent();
+    }
+
+    this.pushIndent();
+    code += this.line('child: ');
+    code += widgetCode;
+    code += ',\n';
+    this.popIndent();
+    code += this.indent() + ')';
+
+    return code;
+  }
+
+  /**
+   * 渲染约束
+   */
+  private renderConstraints(constraints: ForgeConstraints): string {
+    let code = '';
+    const hasMinMax =
+      constraints.minWidth ||
+      constraints.maxWidth ||
+      constraints.minHeight ||
+      constraints.maxHeight;
+
+    if (hasMinMax) {
+      code += this.line('constraints: BoxConstraints(');
+      this.pushIndent();
+
+      if (constraints.minWidth) {
+        code += this.line(`minWidth: ${this.formatNumber(constraints.minWidth)},`);
+      }
+      if (constraints.maxWidth) {
+        code += this.line(`maxWidth: ${this.formatNumber(constraints.maxWidth)},`);
+      }
+      if (constraints.minHeight) {
+        code += this.line(`minHeight: ${this.formatNumber(constraints.minHeight)},`);
+      }
+      if (constraints.maxHeight) {
+        code += this.line(`maxHeight: ${this.formatNumber(constraints.maxHeight)},`);
+      }
+
+      this.popIndent();
+      code += this.line('),');
+    }
+
+    return code;
+  }
+
+  // ============================================================================
+  // Dart 代码格式化
+  // ============================================================================
+
+  /**
+   * 格式化 Dart 代码
+   * 遵循 dart format 风格规范
+   */
+  private formatDartCode(code: string): string {
+    let formatted = code;
+
+    // 1. 规范化换行 - 移除多余空行
+    formatted = this.normalizeBlankLines(formatted);
+
+    // 2. 修复尾随逗号格式
+    formatted = this.fixTrailingCommas(formatted);
+
+    // 3. 移除行尾空格
+    formatted = this.trimTrailingWhitespace(formatted);
+
+    // 4. 确保文件末尾有换行
+    if (!formatted.endsWith('\n')) {
+      formatted += '\n';
+    }
+
+    return formatted;
+  }
+
+  /**
+   * 规范化空行（最多保留一个连续空行）
+   */
+  private normalizeBlankLines(code: string): string {
+    return code.replace(/\n{3,}/g, '\n\n');
+  }
+
+  /**
+   * 修复尾随逗号格式
+   * 确保多行参数列表的最后一个参数有尾随逗号
+   */
+  private fixTrailingCommas(code: string): string {
+    // 在闭括号前添加尾随逗号（如果前面是参数行）
+    return code.replace(/([^,\s])\n(\s*[)\]])/g, '$1,\n$2');
+  }
+
+  /**
+   * 移除行尾空格
+   */
+  private trimTrailingWhitespace(code: string): string {
+    return code
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .join('\n');
   }
 }
