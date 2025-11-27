@@ -5,15 +5,22 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.1+-646CFF.svg)](https://vitejs.dev/)
+[![CI](https://github.com/Genuineh/p2c/actions/workflows/ci.yml/badge.svg)](https://github.com/Genuineh/p2c/actions/workflows/ci.yml)
 
 ## ✨ 特性
 
-- 🎯 **一稿多发** - 支持 Flutter / SwiftUI / Jetpack Compose / React / Vue 3 / 微信小程序
+> **v1.0 专注于 Flutter 代码生成**，其他平台将在后续版本逐步支持
+
+- 🎯 **Flutter 优先** - v1.0 专注于高质量的 Flutter 代码生成
 - 🔍 **像素级还原** - 精准转换设计稿到代码，还原度 ≥90%
 - 🧠 **智能布局** - 自动识别横/竖布局、间距、约束布局
 - 🎨 **主题提取** - 自动提取主题色、文字样式
 - 📦 **组件化输出** - 自动识别组件实例，生成可复用代码
-- ⚡ **零配置运行** - 生成的代码可直接在对应 IDE 中运行
+- ⚡ **零配置运行** - 生成的代码可直接 `flutter run`
+
+### 后续规划 (v2.0+)
+
+- SwiftUI / Jetpack Compose / React / Vue 3 / 微信小程序
 
 ## 🏗️ 技术架构
 
@@ -25,14 +32,16 @@ Node Analyzer（src/ir/analyzer.ts）
 ForgeIR（纯数据，带完整类型）
         ↓
 Codegen Engine（src/codegen/index.ts）
-        ├─→ FlutterRenderer.ts
+        └─→ FlutterRenderer.ts (v1.0)
+        
+后续扩展 (v2.0+):
         ├─→ SwiftUIRenderer.ts
         ├─→ ComposeRenderer.ts
         ├─→ ReactRenderer.ts
         ├─→ VueRenderer.ts
         └─→ WeappRenderer.ts
         ↓
-输出 .dart / .swift / .kt / .tsx / .vue / .wxml+wxss+js
+输出 .dart (v1.0) / .swift / .kt / .tsx / .vue / .wxml+wxss+js (v2.0+)
 ```
 
 ## 📁 项目结构
