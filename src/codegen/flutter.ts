@@ -20,6 +20,9 @@ import type {
 } from '../ir/types';
 import { BaseRenderer, RenderResult } from './base';
 
+/** Default placeholder URL for images without a source */
+const DEFAULT_PLACEHOLDER_URL = 'https://placeholder.com/image';
+
 /**
  * Flutter 渲染器
  */
@@ -549,7 +552,7 @@ export class FlutterRenderer extends BaseRenderer {
 
     code += this.line('Image.network(');
     this.pushIndent();
-    code += this.line(`'${node.imageUrl || 'https://placeholder.com/image'}',`);
+    code += this.line(`'${node.imageUrl || DEFAULT_PLACEHOLDER_URL}',`);
     code += this.line(`width: ${this.formatNumber(node.width)},`);
     code += this.line(`height: ${this.formatNumber(node.height)},`);
     code += this.line(`fit: BoxFit.${this.convertImageMode(node.imageMode)},`);
@@ -582,7 +585,7 @@ export class FlutterRenderer extends BaseRenderer {
 
     code += this.line('Image.network(');
     this.pushIndent();
-    code += this.line(`'${node.imageUrl || 'https://placeholder.com/image'}',`);
+    code += this.line(`'${node.imageUrl || DEFAULT_PLACEHOLDER_URL}',`);
     code += this.line(`width: ${this.formatNumber(node.width)},`);
     code += this.line(`height: ${this.formatNumber(node.height)},`);
     code += this.line(`fit: BoxFit.${this.convertImageMode(node.imageMode)},`);

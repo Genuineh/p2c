@@ -76,7 +76,7 @@ export class CodeFormatter {
 
       // 保持原有缩进结构，只替换缩进字符
       const leadingSpaces = line.length - trimmed.length;
-      const indentLevel = Math.floor(leadingSpaces / 2); // 假设原始缩进是 2 空格
+      const indentLevel = Math.floor(leadingSpaces / this.config.indentSize);
       result.push(indentChar.repeat(indentLevel) + trimmed);
     }
 
