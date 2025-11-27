@@ -1,10 +1,10 @@
 {
   "name": "Pixso CodeForge",
   "id": "pixso-codeforge",
-  "api": "1.0.0",
   "main": "dist/main.js",
   "ui": "dist/ui.html",
-  "editorType": ["figma", "figjam"],
-  "description": "像素锻造 - 一键生成 Flutter / SwiftUI / Jetpack Compose / React / Vue 3 / 微信小程序代码",
-  "permissions": ["currentuser"]
+  "editorType": ["pixso"],
+  "menu": [
+    { "name": "启动插件", "command": "main" }
+  ]
 }
