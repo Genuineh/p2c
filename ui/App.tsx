@@ -147,26 +147,26 @@ const App = () => {
   }, [postMessage]);
 
   return (
-    <div class="container">
+    <div className="container">
       {/* 头部 */}
-      <div class="header">
-        <div class="logo">⚡</div>
+      <div className="header">
+        <div className="logo">⚡</div>
         <div>
-          <div class="title">Pixso CodeForge</div>
-          <div class="subtitle">像素锻造 · 一键生成多端代码</div>
+          <div className="title">Pixso CodeForge</div>
+          <div className="subtitle">像素锻造 · 一键生成多端代码</div>
         </div>
       </div>
 
       {/* 选择信息 */}
-      <div class="section">
-        <div class="section-title">当前选择</div>
-        <div class="selection-info">
-          <div class="selection-icon">📦</div>
-          <div class="selection-text">
-            <div class={`selection-name ${!hasSelection ? 'no-selection' : ''}`}>
+      <div className="section">
+        <div className="section-title">当前选择</div>
+        <div className="selection-info">
+          <div className="selection-icon">📦</div>
+          <div className="selection-text">
+            <div className={`selection-name ${!hasSelection ? 'no-selection' : ''}`}>
               {hasSelection ? selectionName || '未命名元素' : '请选择设计元素'}
             </div>
-            <div class="selection-hint">
+            <div className="selection-hint">
               {hasSelection
                 ? selectionCount > 1
                   ? `已选择 ${selectionCount} 个元素`
@@ -178,27 +178,27 @@ const App = () => {
       </div>
 
       {/* 平台选择 */}
-      <div class="section">
-        <div class="section-title">目标平台</div>
-        <div class="platform-grid">
+      <div className="section">
+        <div className="section-title">目标平台</div>
+        <div className="platform-grid">
           {PLATFORMS.map((platform) => (
             <button
               key={platform.id}
-              class={`platform-btn ${selectedPlatform === platform.id ? 'active' : ''}`}
+              className={`platform-btn ${selectedPlatform === platform.id ? 'active' : ''}`}
               disabled={!platform.enabled}
               onClick={() => platform.enabled && handlePlatformSelect(platform.id)}
             >
-              <span class="platform-icon">{platform.icon}</span>
-              <span class="platform-name">{platform.name}</span>
+              <span className="platform-icon">{platform.icon}</span>
+              <span className="platform-name">{platform.name}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* 生成按钮 */}
-      <div class="section">
+      <div className="section">
         <button
-          class={`generate-btn ${isGenerating ? 'loading' : ''}`}
+          className={`generate-btn ${isGenerating ? 'loading' : ''}`}
           disabled={!hasSelection || isGenerating}
           onClick={handleGenerate}
         >
@@ -208,20 +208,20 @@ const App = () => {
 
       {/* 代码输出 */}
       {codeResult ? (
-        <div class="code-output">
-          <div class="code-header">
-            <span class="code-filename">{codeResult.filename}</span>
-            <button class={`copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopy}>
+        <div className="code-output">
+          <div className="code-header">
+            <span className="code-filename">{codeResult.filename}</span>
+            <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopy}>
               {copied ? '已复制！' : '复制代码'}
             </button>
           </div>
-          <div class="code-area">
-            <pre class="code-content">{error ? `// 错误: ${error}` : codeResult.content}</pre>
+          <div className="code-area">
+            <pre className="code-content">{error ? `// 错误: ${error}` : codeResult.content}</pre>
           </div>
         </div>
       ) : (
-        <div class="placeholder">
-          <div class="placeholder-icon">✨</div>
+        <div className="placeholder">
+          <div className="placeholder-icon">✨</div>
           <div>选择设计元素后点击"生成代码"</div>
           <div style={{ fontSize: '11px', marginTop: '4px' }}>
             支持 Frame、Group、Text、Rectangle 等
