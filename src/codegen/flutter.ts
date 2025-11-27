@@ -1094,9 +1094,9 @@ export class FlutterRenderer extends BaseRenderer {
       code += this.line('Flexible(');
       this.pushIndent();
       // 计算 flex 值（基于百分比）
-      const flexValue = Math.round(
-        (constraints.widthPercent || constraints.heightPercent || 1) * 10
-      );
+      // 优先使用宽度百分比，因为大多数布局是水平的
+      const percent = constraints.widthPercent ?? constraints.heightPercent ?? 1;
+      const flexValue = Math.max(1, Math.round(percent * 10));
       code += this.line(`flex: ${flexValue},`);
       this.popIndent();
     }
@@ -1184,10 +1184,33 @@ export class FlutterRenderer extends BaseRenderer {
   /**
    * 修复尾随逗号格式
    * 确保多行参数列表的最后一个参数有尾随逗号
+   * 仅在明确是 Widget/函数调用结束处添加
    */
   private fixTrailingCommas(code: string): string {
-    // 在闭括号前添加尾随逗号（如果前面是参数行）
-    return code.replace(/([^,\s])\n(\s*[)\]])/g, '$1,\n$2');
+    const lines = code.split('\n');
+    const result: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const currentLine = lines[i];
+      const nextLine = lines[i + 1];
+
+      // 如果当前行不以逗号结尾，且下一行是闭括号（但不是空行或已有逗号）
+      if (
+        nextLine &&
+        /^\s*[)\]},]+\s*$/.test(nextLine) &&
+        /[^\s,]$/.test(currentLine.trim()) &&
+        !currentLine.trim().endsWith(',') &&
+        !currentLine.trim().endsWith('{') &&
+        !currentLine.trim().endsWith('(') &&
+        !currentLine.trim().endsWith('[')
+      ) {
+        result.push(currentLine.trimEnd() + ',');
+      } else {
+        result.push(currentLine);
+      }
+    }
+
+    return result.join('\n');
   }
 
   /**
