@@ -12,7 +12,7 @@ import type { ForgeDocument, ForgeTargetPlatform, ForgeCodegenConfig } from './i
 import type { RenderResult } from './codegen/base';
 
 // 显示插件 UI
-figma.showUI(__html__, {
+pixso.showUI(__html__, {
   width: 400,
   height: 600,
   themeColors: true,
@@ -32,7 +32,7 @@ let currentConfig: ForgeCodegenConfig = {
 /**
  * 处理来自 UI 的消息
  */
-figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
+pixso.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
   switch (msg.type) {
     case 'generate':
       await handleGenerate(msg.target as ForgeTargetPlatform);
@@ -50,7 +50,7 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
       break;
 
     case 'close':
-      figma.closePlugin();
+      pixso.closePlugin();
       break;
 
     default:
@@ -62,7 +62,7 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
 /**
  * 监听选择变化
  */
-figma.on('selectionchange', async () => {
+pixso.on('selectionchange', async () => {
   await handleGetSelection();
 });
 
@@ -70,10 +70,10 @@ figma.on('selectionchange', async () => {
  * 处理获取选择
  */
 async function handleGetSelection(): Promise<void> {
-  const selection = figma.currentPage.selection;
+  const selection = pixso.currentPage.selection;
 
   if (selection.length === 0) {
-    figma.ui.postMessage({
+    pixso.ui.postMessage({
       type: 'selection-changed',
       hasSelection: false,
       count: 0,
@@ -84,7 +84,7 @@ async function handleGetSelection(): Promise<void> {
 
   const name = selection.length === 1 ? selection[0].name : `${selection.length} 个元素`;
 
-  figma.ui.postMessage({
+  pixso.ui.postMessage({
     type: 'selection-changed',
     hasSelection: true,
     count: selection.length,
@@ -96,24 +96,24 @@ async function handleGetSelection(): Promise<void> {
  * 处理代码生成
  */
 async function handleGenerate(target: ForgeTargetPlatform): Promise<void> {
-  const selection = figma.currentPage.selection;
+  const selection = pixso.currentPage.selection;
 
   if (selection.length === 0) {
-    figma.notify('请先选择要转换的设计元素', { error: true });
+    pixso.notify('请先选择要转换的设计元素', { error: true });
     return;
   }
 
   try {
     // 发送开始生成消息
-    figma.ui.postMessage({ type: 'generating', status: true });
+    pixso.ui.postMessage({ type: 'generating', status: true });
 
     // 分析节点
     const analyzer = new NodeAnalyzer();
     const document = await analyzer.analyzeSelection(selection);
 
     if (!document) {
-      figma.notify('无法分析选中的节点', { error: true });
-      figma.ui.postMessage({ type: 'generating', status: false });
+      pixso.notify('无法分析选中的节点', { error: true });
+      pixso.ui.postMessage({ type: 'generating', status: false });
       return;
     }
 
@@ -125,21 +125,21 @@ async function handleGenerate(target: ForgeTargetPlatform): Promise<void> {
     const results = await generateCode(optimizedDocument, target);
 
     // 发送结果
-    figma.ui.postMessage({
+    pixso.ui.postMessage({
       type: 'code-generated',
       results,
     });
 
-    figma.notify(`成功生成 ${target} 代码！`);
+    pixso.notify(`成功生成 ${target} 代码！`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';
-    figma.notify(`生成失败: ${errorMessage}`, { error: true });
-    figma.ui.postMessage({
+    pixso.notify(`生成失败: ${errorMessage}`, { error: true });
+    pixso.ui.postMessage({
       type: 'error',
       message: errorMessage,
     });
   } finally {
-    figma.ui.postMessage({ type: 'generating', status: false });
+    pixso.ui.postMessage({ type: 'generating', status: false });
   }
 }
 

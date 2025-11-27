@@ -162,7 +162,8 @@ export class NodeAnalyzer {
       const frame = node as FrameNode;
 
       // 布局属性
-      if (frame.layoutMode && frame.layoutMode !== 'NONE' && frame.layoutMode !== 'GRID') {
+      // Note: Pixso API only supports 'HORIZONTAL' and 'VERTICAL' layout modes (no 'GRID')
+      if (frame.layoutMode && frame.layoutMode !== 'NONE') {
         container.layoutDirection = this.convertLayoutDirection(frame.layoutMode);
         container.mainAxisAlignment = this.convertMainAxisAlignment(frame.primaryAxisAlignItems);
         container.crossAxisAlignment = this.convertCrossAxisAlignment(frame.counterAxisAlignItems);
@@ -341,14 +342,14 @@ export class NodeAnalyzer {
   /**
    * 提取填充
    */
-  private extractFills(fills: readonly Paint[] | typeof figma.mixed): ForgeFill[] {
-    if (fills === figma.mixed || !fills) {
+  private extractFills(fills: readonly Paint[] | string): ForgeFill[] {
+    if (typeof fills === 'string' || !fills) {
       return [];
     }
 
-    return fills
-      .filter((fill) => fill.visible !== false)
-      .map((fill) => {
+    return (fills as readonly Paint[])
+      .filter((fill: Paint) => fill.visible !== false)
+      .map((fill: Paint) => {
         const forgeFill: ForgeFill = {
           type: 'solid',
           opacity: fill.opacity,
@@ -356,7 +357,7 @@ export class NodeAnalyzer {
 
         if (fill.type === 'SOLID') {
           forgeFill.type = 'solid';
-          forgeFill.color = this.convertColor(fill.color, fill.opacity);
+          forgeFill.color = this.convertColor((fill as SolidPaint).color, fill.opacity);
 
           // 记录提取的颜色
           const colorKey = this.getColorKey(forgeFill.color);
@@ -368,16 +369,17 @@ export class NodeAnalyzer {
           fill.type === 'GRADIENT_DIAMOND'
         ) {
           forgeFill.type = 'gradient';
+          const gradientFill = fill as GradientPaint;
           forgeFill.gradient = {
             type: this.convertGradientType(fill.type),
-            stops: fill.gradientStops.map((stop) => ({
+            stops: gradientFill.gradientStops.map((stop: ColorStop) => ({
               position: stop.position,
               color: this.convertColor(stop.color),
             })),
           };
         } else if (fill.type === 'IMAGE') {
           forgeFill.type = 'image';
-          forgeFill.imageMode = this.convertImageMode(fill.scaleMode);
+          forgeFill.imageMode = this.convertImageMode((fill as ImagePaint).scaleMode);
         }
 
         return forgeFill;
@@ -388,18 +390,18 @@ export class NodeAnalyzer {
    * 提取边框
    */
   private extractStrokes(
-    strokes: readonly Paint[] | typeof figma.mixed,
-    strokeWeight: number | typeof figma.mixed
+    strokes: readonly Paint[] | string,
+    strokeWeight: number | string
   ): ForgeStroke[] {
-    if (strokes === figma.mixed || !strokes) {
+    if (typeof strokes === 'string' || !strokes) {
       return [];
     }
 
-    const weight = strokeWeight === figma.mixed ? 1 : strokeWeight;
+    const weight = typeof strokeWeight === 'string' ? 1 : strokeWeight;
 
-    return strokes
-      .filter((stroke) => stroke.visible !== false && stroke.type === 'SOLID')
-      .map((stroke) => ({
+    return (strokes as readonly Paint[])
+      .filter((stroke: Paint) => stroke.visible !== false && stroke.type === 'SOLID')
+      .map((stroke: Paint) => ({
         color: this.convertColor((stroke as SolidPaint).color, stroke.opacity),
         width: weight,
       }));
@@ -431,8 +433,8 @@ export class NodeAnalyzer {
     node: RectangleNode | FrameNode
   ): ForgeCornerRadius | number | undefined {
     if ('cornerRadius' in node) {
-      if (node.cornerRadius === figma.mixed) {
-        // 不同角有不同圆角
+      if (typeof node.cornerRadius === 'string') {
+        // 不同角有不同圆角 (mixed)
         return {
           topLeft: node.topLeftRadius || 0,
           topRight: node.topRightRadius || 0,
@@ -440,7 +442,7 @@ export class NodeAnalyzer {
           bottomLeft: node.bottomLeftRadius || 0,
         };
       }
-      return node.cornerRadius;
+      return node.cornerRadius as number;
     }
     return undefined;
   }
@@ -470,15 +472,19 @@ export class NodeAnalyzer {
    * 提取文本样式
    */
   private extractTextStyle(node: TextNode): ForgeTextStyle {
-    const fontSize = node.fontSize === figma.mixed ? 14 : node.fontSize;
+    const fontSize = typeof node.fontSize === 'string' ? 14 : (node.fontSize as number);
     const fontName =
-      node.fontName === figma.mixed ? { family: 'Inter', style: 'Regular' } : node.fontName;
+      typeof node.fontName === 'string'
+        ? { family: 'Inter', style: 'Regular' }
+        : (node.fontName as FontName);
     const lineHeight =
-      node.lineHeight === figma.mixed ? { unit: 'AUTO' as const } : node.lineHeight;
+      typeof node.lineHeight === 'string'
+        ? { unit: 'AUTO' as const }
+        : (node.lineHeight as LineHeight);
     const letterSpacing =
-      node.letterSpacing === figma.mixed
+      typeof node.letterSpacing === 'string'
         ? { unit: 'PERCENT' as const, value: 0 }
-        : node.letterSpacing;
+        : (node.letterSpacing as LetterSpacing);
 
     const style: ForgeTextStyle = {
       fontFamily: fontName.family,
@@ -503,8 +509,8 @@ export class NodeAnalyzer {
 
     // 颜色（从填充中获取）
     const fills = node.fills;
-    if (fills !== figma.mixed && fills.length > 0 && fills[0].type === 'SOLID') {
-      style.color = this.convertColor(fills[0].color, fills[0].opacity);
+    if (typeof fills !== 'string' && fills.length > 0 && fills[0].type === 'SOLID') {
+      style.color = this.convertColor((fills[0] as SolidPaint).color, fills[0].opacity);
     }
 
     return style;
@@ -558,14 +564,12 @@ export class NodeAnalyzer {
     };
   }
 
-  private convertLayoutDirection(mode: 'HORIZONTAL' | 'VERTICAL' | 'NONE'): ForgeLayoutDirection {
+  private convertLayoutDirection(mode: 'HORIZONTAL' | 'VERTICAL'): ForgeLayoutDirection {
     switch (mode) {
       case 'HORIZONTAL':
         return 'horizontal';
       case 'VERTICAL':
         return 'vertical';
-      default:
-        return 'none';
     }
   }
 
